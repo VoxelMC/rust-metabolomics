@@ -1,9 +1,12 @@
 [package]
-name = "molecular-weight-calculator"
+name = "calcm"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde = { version = "1.0.188", features = ["derive"] }
 clap = { version = "4.4.4", features = ["derive"] }
+csv = "1.2.2"
+regex = "1.9.5"

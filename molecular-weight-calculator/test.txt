@@ -1,0 +1,17 @@
+mConventionalElementMasses = new Dictionary<string, double>
+	{
+		{"H", 1.008},
+		{"D", 1.008},   // Isotope of hydrogen; use the mass of the most common element for the average mass (as we do for other isotopes)
+		{"T", 1.008},   // Isotope of hydrogen
+		{"Li", 6.94},
+		{"B", 10.81},
+		{"C", 12.011},
+		{"N", 14.007},
+		{"O", 15.999},
+		{"Mg", 24.305},
+		{"Si", 28.085},
+		{"S", 32.06},
+		{"Cl", 35.45},
+		{"Br", 79.904},
+		{"Tl", 204.38}
+};=t=b9u]]]

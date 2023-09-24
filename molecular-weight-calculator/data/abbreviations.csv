@@ -1,0 +1,18 @@
+Bpy     C10H8N2              0         -          ; Bipyridine
+Bu      C4H9                 1         -          ; Butyl
+D       ^2.014H              1         -          ; Deuterium
+Elec    ^0.000548579909H   -1          -; Electron
+En      C2H8N2               0         -          ; Ethylenediamine
+Et      CH3CH2               1         -          ; Ethyl
+Me      CH3                  1         -          ; Methyl
+Ms      CH3SOO               -1        -          ; Mesyl
+Oac     C2H3O2               -1        -          ; Acetate
+Otf     OSO2CF3              -1        -          ; Triflate
+Ox      C2O4                 -2        -          ; Oxalate
+Ph      C6H5                 1         -          ; Phenyl
+Phen    C12H8N2              0         -          ; Phenanthroline
+Prot    ^1.00727649H         1         -          ; Proton
+Py      C5H5N                0         -          ; Pyridine
+Tpp     (C4H2N(C6H5C)C4H2N(C6H5C))2   0    -      ; Tetraphenylporphyrin
+Ts      CH3C6H4SOO           -1        -          ; Tosyl
+Urea    H2NCONH2             0         -          ; Urea

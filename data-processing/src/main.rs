@@ -34,5 +34,8 @@ fn main() {
         Err(e) => panic!("{e}"),
     };
 
-    println!("{df}");
+    let exploded = df.explode(["TH_T_50"]).unwrap();
+
+    // println!("{df}");
+    println!("{exploded}");
 }
