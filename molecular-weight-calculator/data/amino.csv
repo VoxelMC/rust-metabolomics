@@ -1,29 +1,29 @@
-Short Formula Charge Letter Name
-Ala     C3H5NO               0         A         ; Alanine
-Arg     C6H12N4O             0         R         ; Arginine. (unprotonated NH2)
-Asn     C4H6N2O2             0         N         ; Asparagine
-Asp     C4H5NO3              0         D         ; Aspartic acid (undissociated COOH)
-Cys     C3H5NOS              0         C         ; Cysteine (no disulfide link)
-Gla     C6H7NO5              0         U         ; gamma-Carboxyglutamate
-Gln     C5H8N2O2             0         Q         ; Glutamine
-Glu     C5H7NO3              0         E         ; Glutamic acid (undissociated COOH)
-Gly     C2H3NO               0         G         ; Glycine
-His     C6H7N3O              0         H         ; Histidine (unprotonated NH)
-Hyl     C6H12N2O2            0         -          ; Hydroxylysine
-Hse     C4H7NO2              0         -          ; Homoserine
-Hyp     C5H7NO2              0         -          ; Hydroxyproline
-Ile     C6H11NO              0         I         ; Isoleucine
-Leu     C6H11NO              0         L         ; Leucine
-Lys     C6H12N2O             0         K         ; Lysine (unprotonated NH2)
-Met     C5H9NOS              0         M         ; Methionine
-Orn     C5H10N2O             0         O         ; Ornithine
-Phe     C9H9NO               0         F         ; Phenylalanine
-Pro     C5H7NO               0         P         ; Proline
-Pyr     C5H5NO2              0         -          ; Pyroglutamic acid
-Sar     C3H5NO               0         -          ; Sarcosine
-Ser     C3H5NO2              0         S         ; Serine
-Thr     C4H7NO2              0         T         ; Threonine
-Trp     C11H10N2O            0         W         ; Tryptophan
-Tyr     C9H9NO2              0         Y         ; Tyrosine
-Val     C5H9NO               0         V         ; Valine
-Xxx     C6H12N2O             0         X         ; Unknown
+abbreviation,formula,charge,letter,name
+Ala,C3H5NO,0,A,AlanineGlycine
+Arg,C6H12N4O,0,R,Arginine
+Asn,C4H6N2O2,0,N,Asparagine
+Asp,C4H5NO3,0,D,Aspartic acid
+Cys,C3H5NOS,0,C,Cysteine
+Gla,C6H7NO5,0,U,gamma-Carboxyglutamate
+Gln,C5H8N2O2,0,Q,Glutamine
+Glu,C5H7NO3,0,E,Glutamic acid
+Gly,C2H3NO,0,G,Glycine
+His,C6H7N3O,0,H,Histidine
+Hyl,C6H12N2O2,0,-,Hydroxylysine
+Hse,C4H7NO2,0,-,Homoserine
+Hyp,C5H7NO2,0,-,Hydroxyproline
+Ile,C6H11NO,0,I,Isoleucine
+Leu,C6H11NO,0,L,Leucine
+Lys,C6H12N2O,0,K,Lysine
+Met,C5H9NOS,0,M,Methionine
+Orn,C5H10N2O,0,O,Ornithine
+Phe,C9H9NO,0,F,Phenylalanine
+Pro,C5H7NO,0,P,Proline
+Pyr,C5H5NO2,0,-,Pyroglutamic acid
+Sar,C3H5NO,0,-,Sarcosine
+Ser,C3H5NO2,0,S,Serine
+Thr,C4H7NO2,0,T,Threonine
+Trp,C11H10N2O,0,W,Tryptophan
+Tyr,C9H9NO2,0,Y,Tyrosine
+Val,C5H9NO,0,V,Valine
+Xxx,C6H12N2O,0,X,Unknown
