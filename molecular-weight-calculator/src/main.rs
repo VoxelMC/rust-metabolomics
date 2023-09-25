@@ -14,7 +14,7 @@ Options:
 
 use clap::{arg, error::ErrorKind, ArgGroup, Args, Command};
 use regex::Regex;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 #[derive(Debug, Args)]
 #[command(author, version, about, long_about = None)]
@@ -73,7 +73,7 @@ fn main() {
 }
 
 fn parse_formula<'a>(formula: String) -> Vec<String> {
-    let reg = Regex::new(r"[A-Za-z][a-z]?\d*|(<!\([^)])\(.*\)\d+(![^(]*\))")
+    let reg = Regex::new(r"[A-Za-z][a-z]{0,2}\d*|(<!\([^)])\(.*\)\d+(![^(]*\))")
         .expect("RegEx parsing error.");
     let binding = reg.to_owned();
     let out = binding.find_iter(formula.as_str());
@@ -97,20 +97,57 @@ fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
             .map(|val| val.as_str().to_owned())
             .collect();
 
-        let elements_csv_path: PathBuf = PathBuf::from(
-            r#"D:\Coding\Rust\rust-metabolomics\molecular-weight-calculator\data\elements2.csv"#,
-        );
+        let current_exe_res = env::current_exe();
+        let mut current_exe_path: PathBuf =
+            current_exe_res.expect("Could not read executable path.");
+        current_exe_path.pop();
+
+        let elements_csv_path: PathBuf = current_exe_path
+            .join("../../data/elements2.csv")
+            .canonicalize()
+            .expect("Canonicalization of executable path failed.");
+
         let elements_csv_stream = csv::Reader::from_path(elements_csv_path);
         let mut elements_deserialize_binding = elements_csv_stream.unwrap();
         let mut elements_csv_deserialized =
             elements_deserialize_binding.deserialize::<ElementRow>();
 
-        let abbr_csv_path: PathBuf = PathBuf::from(
-            r#"D:\Coding\Rust\rust-metabolomics\molecular-weight-calculator\data\elements2.csv"#,
-        );
-        let abbr_csv_stream = csv::Reader::from_path(elements_csv_path);
+        let abbr_csv_path: PathBuf = current_exe_path
+            .join("../../data/abbreviations.csv")
+            .canonicalize()
+            .expect("Canonicalization of executable path failed.");
+        let abbr_csv_stream = csv::Reader::from_path(abbr_csv_path);
         let mut abbr_deserialize_binding = abbr_csv_stream.unwrap();
-        let mut abbr_csv_deserialized = abbr_deserialize_binding.deserialize::<ElementRow>();
+        let mut abbr_csv_deserialized = abbr_deserialize_binding.deserialize::<AbbreviationRow>();
+
+        let _expanded_abbr = match abbr_csv_deserialized.find(|row| {
+            row.as_ref()
+                .expect("Could not get AbbreviationRow")
+                .abbreviation
+                == matches[0]
+        }) {
+            Some(res) => match res {
+                Ok(found) => {
+                    let parsed = parse_formula(found.formula);
+                    if debug {
+                        println!("Expanded Abbreviation: {:?}", parsed)
+                    };
+                    let weight = mass_from_formula(parsed, debug);
+
+                    if matches.len().eq(&1) {
+                        aggregate_mass += weight;
+                    } else if matches.len().eq(&2) {
+                        let element_count = matches[1]
+                            .parse::<f32>()
+                            .expect("Could not parse element count into a float32.");
+                        aggregate_mass += weight * element_count;
+                    }
+                    continue;
+                }
+                Err(_e) => (),
+            },
+            None => (),
+        };
 
         if debug {
             println!("Element: {:?}", matches[0]);
@@ -152,8 +189,8 @@ struct ElementRow {
 struct AbbreviationRow {
     abbreviation: String,
     formula: String,
-    charge: i32,
-    name: String,
+    // charge: i32,
+    // name: String,
 }
 
 // let element_abbr = &matches[0];
