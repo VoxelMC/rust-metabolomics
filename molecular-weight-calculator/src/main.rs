@@ -13,11 +13,37 @@ Options:
 */
 
 use clap::{arg, error::ErrorKind, ArgGroup, Args, Command};
+use colored::Colorize;
 use regex::Regex;
 use std::{env, path::PathBuf};
 
+#[derive(Debug, serde::Deserialize, Clone)]
+struct ElementRow {
+    element: String,
+    weight: String,
+    // uncertainty: String,
+    // charge: i32,
+}
+
+#[derive(Debug, serde::Deserialize, Clone)]
+struct AbbreviationRow {
+    abbreviation: String,
+    formula: String,
+    // charge: i32,
+    // name: String,
+}
+
+#[derive(Debug, serde::Deserialize, Clone)]
+struct AminoAcidRow {
+    letter: String,
+    formula: String,
+    // ,charge,letter,name
+    // charge: i32,
+    // name: String,
+}
+
 #[derive(Debug, Args)]
-#[command(author, version, about, long_about = None)]
+#[command(author = "Trevor Fox, voxelmc2@student.ubc.ca", version = "1.0.0", about, long_about = None)]
 struct Arguments {
     #[arg(
         help = "The molecular or IUPAC formula to calculate the mass from.",
@@ -30,14 +56,23 @@ fn main() {
     let cli = Command::new("calcm")
         .author("Trevor Fox, voxelmc2@student.ubc.ca")
         .version("1.0.0")
-        .about("Calculates the molecular mass of a given formula! NOTE: CURRENTLY DEFAULTED TO CALCULATE AVERAGE VALUES. EXACT VALUES WILL BE AVAILABLE IN THE FUTURE.")
-        .arg(arg!(-a --average "Requests the average mass. (Enables ambiguous bases when calculating nucleotides)"))
+        .about(
+            format!(
+                "{} | {}\n{}\n{}", 
+                "cmo".bright_cyan().bold(), 
+                "v1.0.0".bright_green(), 
+                "Calculates the molecular mass of a given formula!", 
+                "Developed by Trevor Fox.".bold()
+            )
+        )
+        .arg(arg!(-a --average "Requests the average mass (enables ambiguous bases when calculating nucleotides)."))
         .arg(arg!(-d --dna "Notify the calculator to parse the formula as IUPAC bases. Accepts [A, T, G, C]"))
         .arg(arg!(-r --rna "Notify the calculator to parse the formula as IUPAC bases. Accepts [A, U, G, C]."))
         .arg(arg!(-p --protein "Notify the calculator to parse the formula as single-letter IUPAC amino acids."))
         .arg(arg!(-f --format "Shows information about the required file format for file-based input."))
         .arg(arg!(-F --file <FILE> "Specify a file for the calculator to read the formula from."))
         .arg(arg!(--debug "Launch in verbose debugging mode."))
+        .arg(arg!(-s --silent "Print only the numeric mass."))
         .group(
             ArgGroup::new("molecule").args(["dna", "rna", "protein"])
         );
@@ -50,29 +85,50 @@ fn main() {
     let cli = Arguments::augment_args(cli);
 
     let matches = cli.get_matches();
-    let molecule = match matches.get_raw("formula") {
-        Some(mut raw) => raw.next().to_owned(),
+    let molecule_string = match matches.get_raw("formula") {
+        Some(mut raw) => raw
+            .next()
+            .to_owned()
+            .expect("Could not cast molecule into OsString")
+            .to_str()
+            .expect("Could not cast molecule into String")
+            .to_owned(),
         None => {
             let _ = err.print();
             std::process::exit(1);
         }
+    };
+
+    if !matches.get_flag("silent") {
+        println!(
+            "Calculating mass for: {}",
+            molecule_string.bright_yellow().bold()
+        );
     }
-    .unwrap();
 
-    println!("Calculating mass for: {:?}", molecule);
+    if matches.get_flag("protein") {
+        let formula_vec = parse_protein_formula(molecule_string);
+        let output = mass_from_formula(
+            formula_vec,
+            matches.get_flag("debug"),
+            matches.get_flag("average"),
+        );
+        println!("{:?}", output);
+        return;
+    }
 
-    let formula_vec: Vec<String> = parse_formula(
-        molecule
-            .to_str()
-            .expect("Could not cast molecule into String")
-            .to_owned(),
+    let formula_vec: Vec<String> = parse_molecular_formula(molecule_string);
+
+    let output = mass_from_formula(
+        formula_vec,
+        matches.get_flag("debug"),
+        matches.get_flag("average"),
     );
-
-    let output = mass_from_formula(formula_vec, matches.get_flag("debug"));
     println!("{:?}", output);
 }
 
-fn parse_formula<'a>(formula: String) -> Vec<String> {
+/// CH3 -> ["C", "H3"]
+fn parse_molecular_formula<'a>(formula: String) -> Vec<String> {
     let reg = Regex::new(r"[A-Za-z][a-z]{0,2}\d*|(<!\([^)])\(.*\)\d+(![^(]*\))")
         .expect("RegEx parsing error.");
     let binding = reg.to_owned();
@@ -87,7 +143,7 @@ fn parse_formula<'a>(formula: String) -> Vec<String> {
     out_vec
 }
 
-fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
+fn mass_from_formula<'ass>(parsed_formula: Vec<String>, is_debug: bool, is_average: bool) -> f32 {
     let mut aggregate_mass: f32 = 0.0;
 
     for atom in parsed_formula {
@@ -107,6 +163,7 @@ fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
             .canonicalize()
             .expect("Canonicalization of executable path failed.");
 
+        // Try mapping to clones to remake each time, instead of new reader.
         let elements_csv_stream = csv::Reader::from_path(elements_csv_path);
         let mut elements_deserialize_binding = elements_csv_stream.unwrap();
         let mut elements_csv_deserialized =
@@ -128,11 +185,11 @@ fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
         }) {
             Some(res) => match res {
                 Ok(found) => {
-                    let parsed = parse_formula(found.formula);
-                    if debug {
+                    let parsed = parse_molecular_formula(found.formula);
+                    if is_debug {
                         println!("Expanded Abbreviation: {:?}", parsed)
                     };
-                    let weight = mass_from_formula(parsed, debug);
+                    let weight = mass_from_formula(parsed, is_debug, is_average);
 
                     if matches.len().eq(&1) {
                         aggregate_mass += weight;
@@ -149,10 +206,11 @@ fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
             None => (),
         };
 
-        if debug {
+        if is_debug {
             println!("Element: {:?}", matches[0]);
             println!("Matches: {:?}", matches);
             println!("Matches Len: {:?}", matches.len());
+            println!("Aggregated Mass: {:?}", aggregate_mass);
         }
 
         let element: Option<Result<ElementRow, csv::Error>> =
@@ -173,65 +231,34 @@ fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
             aggregate_mass += element_weight * element_count;
         }
     }
-
     aggregate_mass
 }
 
-#[derive(Debug, serde::Deserialize, Clone)]
-struct ElementRow {
-    element: String,
-    weight: String,
-    // uncertainty: String,
-    // charge: i32,
+/// Gives deprotonated and protonated (M+2).
+fn parse_protein_formula<'a>(formula: String) -> Vec<String> {
+    let reg = Regex::new(r"[Aa]|[C-Yc-y]").expect("RegEx parsing error.");
+    let binding = reg.to_owned();
+    let out = binding.find_iter(formula.as_str());
+
+    let current_exe_res = env::current_exe();
+    let mut current_exe_path: PathBuf = current_exe_res.expect("Could not read executable path.");
+    current_exe_path.pop();
+
+    let mut out_vec: Vec<String> = vec![];
+    out.for_each(|val| {
+        let aa_csv_path: PathBuf = current_exe_path
+            .join("../../data/amino.csv")
+            .canonicalize()
+            .expect("Canonicalization of executable path failed.");
+        let aa_csv_stream = csv::Reader::from_path(aa_csv_path);
+        let aa_deserialize_binding = aa_csv_stream.unwrap();
+        let mut aa_csv_deserialized = aa_deserialize_binding.into_deserialize::<AminoAcidRow>();
+
+        let aa_formula = aa_csv_deserialized
+            .find(|aa_row| aa_row.as_ref().unwrap().letter == val.as_str().to_owned());
+        let in_vec: Vec<String> = parse_molecular_formula(aa_formula.unwrap().unwrap().formula);
+
+        out_vec.append(in_vec.to_vec().as_mut());
+    });
+    out_vec
 }
-
-#[derive(Debug, serde::Deserialize, Clone)]
-struct AbbreviationRow {
-    abbreviation: String,
-    formula: String,
-    // charge: i32,
-    // name: String,
-}
-
-// let element_abbr = &matches[0];
-
-// println!("{:?}", matches);
-// // println!("element abbr {:?}", element_abbr);
-// println!(
-//     "MANUAL H {:?}",
-//     elements_csv_deserialized.find(|val| val.as_ref().expect("Couldn't.").element == "K")
-// );
-// // println!(
-// //     "{:?}",
-// //     elements_csv_deserialized
-// //         .find(|val| val.as_ref().expect("Couldn't.").element == element_abbr.as_ref())
-// // );
-
-// let element: Option<Result<ElementRow, csv::Error>> =
-//     elements_csv_deserialized.find(|val| val.as_ref().unwrap().element == matches[0]);
-
-// let a = match element {
-//     Some(aa) => {
-//         // println!("{:?}", aa);
-//         aa
-//     }
-//     None => panic!("asdddd"),
-// };
-
-// let ab = match a {
-//     Ok(dd) => {
-//         // println!("{:?}", &dd);
-//         dd
-//     }
-//     Err(e) => panic!("asd"),
-// };
-
-// let mut found: Vec<ElementRow> = vec![];
-// for element in elements_csv_tosort {
-//     if element.element == matches[0] {
-//         found.insert(found.len(), element);
-//         break;
-//     } else {
-//         continue;
-//     }
-// }
