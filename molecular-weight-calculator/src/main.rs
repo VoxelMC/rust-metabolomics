@@ -87,28 +87,39 @@ fn parse_formula<'a>(formula: String) -> Vec<String> {
     out_vec
 }
 
-fn mass_from_formula<'ass>(formula: Vec<String>, debug: bool) -> f32 {
+fn mass_from_formula<'ass>(parsed_formula: Vec<String>, debug: bool) -> f32 {
     let mut aggregate_mass: f32 = 0.0;
 
-    for atom in formula {
+    for atom in parsed_formula {
         let reg = Regex::new(r"(\D+)|(\d+)").expect("RegEx parsing error.");
         let matches: Vec<String> = reg
             .find_iter(&atom)
             .map(|val| val.as_str().to_owned())
             .collect();
 
-        let elements_csv_path: PathBuf = PathBuf::from("./data/elements2.csv");
+        let elements_csv_path: PathBuf = PathBuf::from(
+            r#"D:\Coding\Rust\rust-metabolomics\molecular-weight-calculator\data\elements2.csv"#,
+        );
         let elements_csv_stream = csv::Reader::from_path(elements_csv_path);
-        let mut deserialize_binding = elements_csv_stream.unwrap();
-        let mut elements_csv_deserialized = deserialize_binding.deserialize::<ElementRow>();
+        let mut elements_deserialize_binding = elements_csv_stream.unwrap();
+        let mut elements_csv_deserialized =
+            elements_deserialize_binding.deserialize::<ElementRow>();
+
+        let abbr_csv_path: PathBuf = PathBuf::from(
+            r#"D:\Coding\Rust\rust-metabolomics\molecular-weight-calculator\data\elements2.csv"#,
+        );
+        let abbr_csv_stream = csv::Reader::from_path(elements_csv_path);
+        let mut abbr_deserialize_binding = abbr_csv_stream.unwrap();
+        let mut abbr_csv_deserialized = abbr_deserialize_binding.deserialize::<ElementRow>();
 
         if debug {
-            println!("{:?}", matches[0].to_uppercase());
-            println!("{:?}", matches);
+            println!("Element: {:?}", matches[0]);
+            println!("Matches: {:?}", matches);
+            println!("Matches Len: {:?}", matches.len());
         }
 
-        let element: Option<Result<ElementRow, csv::Error>> = elements_csv_deserialized
-            .find(|val| val.as_ref().unwrap().element == matches[0].to_uppercase());
+        let element: Option<Result<ElementRow, csv::Error>> =
+            elements_csv_deserialized.find(|val| val.as_ref().unwrap().element == matches[0]);
 
         let element_weight = element
             .expect("1")
@@ -116,11 +127,9 @@ fn mass_from_formula<'ass>(formula: Vec<String>, debug: bool) -> f32 {
             .weight
             .parse::<f32>()
             .expect("Could not parse element mass from dataset as a float32.");
-
-        if matches[1].is_empty() {
-            println!("here");
+        if matches.len().eq(&1) {
             aggregate_mass += element_weight;
-        } else {
+        } else if matches.len().eq(&2) {
             let element_count = matches[1]
                 .parse::<f32>()
                 .expect("Could not parse element count into a float32.");
@@ -137,6 +146,14 @@ struct ElementRow {
     weight: String,
     // uncertainty: String,
     // charge: i32,
+}
+
+#[derive(Debug, serde::Deserialize, Clone)]
+struct AbbreviationRow {
+    abbreviation: String,
+    formula: String,
+    charge: i32,
+    name: String,
 }
 
 // let element_abbr = &matches[0];
