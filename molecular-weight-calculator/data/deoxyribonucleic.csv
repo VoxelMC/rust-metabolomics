@@ -1,8 +1,9 @@
 short,formula,charge,letter,name,degenerate
-A,C10H14N5O7P,-2,A,AMP,
-C,C9H14N3O8P,-2,C,CMP,
-G,C10H14N5O8P,-2,G,GMP,
-U,C9H13N2O9P,-2,U,UMP,
+A,C10H14N5O6P,-2,A,AMP,
+C,C9H14N3O7P,-2,C,CMP,
+G,C10H14N5O7P,-2,G,GMP,
+T,C10H14N5O7P,-2,T,TMP,
+U,C9H13N2O8P,-2,U,UMP,
 R,-,-2,R,Purine,A|G
 Y,-,-2,Y,Pyrimidine,C|T
 S,-,-2,S,Strong,G|C
@@ -13,4 +14,4 @@ B,-,-2,B,!A,C|G|T
 D,-,-2,D,!C,A|G|T
 H,-,-2,H,!G,A|C|T
 V,-,-2,V,!T,A|C|G
-N,-,-2,N,Nucleotide,A|T|G|C
+N,-,-2,N,Deoxyribonucleotide,A|T|C|G

@@ -42,6 +42,14 @@ struct AminoAcidRow {
     // name: String,
 }
 
+#[derive(Debug, serde::Deserialize, Clone)]
+struct NucleicAcidRow {
+    letter: String,
+    formula: String,
+    // ,charge,letter,name
+    // charge: i32,
+}
+
 #[derive(Debug, Args)]
 #[command(author = "Trevor Fox, voxelmc2@student.ubc.ca", version = "1.0.0", about, long_about = None)]
 struct Arguments {
@@ -99,20 +107,38 @@ fn main() {
         }
     };
 
+    let is_average = matches.get_flag("average");
+    let is_debug = matches.get_flag("debug");
+
     if !matches.get_flag("silent") {
         println!(
-            "Calculating mass for: {}",
+            "Calculating {} mass for: {}",
+            if matches.get_flag("average") {
+                "average"
+            } else {
+                "exact"
+            },
             molecule_string.bright_yellow().bold()
         );
     }
 
     if matches.get_flag("protein") {
         let formula_vec = parse_protein_formula(molecule_string);
-        let output = mass_from_formula(
-            formula_vec,
-            matches.get_flag("debug"),
-            matches.get_flag("average"),
-        );
+        let output = mass_from_formula(formula_vec, is_debug, is_average);
+        println!("{:?}", output);
+        return;
+    }
+
+    if matches.get_flag("dna") {
+        let formula_vec = parse_nucleic_formula(molecule_string, false, is_average);
+        let output = mass_from_formula(formula_vec, is_debug, is_average);
+        println!("{:?}", output);
+        return;
+    }
+
+    if matches.get_flag("rna") {
+        let formula_vec = parse_nucleic_formula(molecule_string, true, is_average);
+        let output = mass_from_formula(formula_vec, is_debug, is_average);
         println!("{:?}", output);
         return;
     }
@@ -158,10 +184,13 @@ fn mass_from_formula<'ass>(parsed_formula: Vec<String>, is_debug: bool, is_avera
             current_exe_res.expect("Could not read executable path.");
         current_exe_path.pop();
 
-        let elements_csv_path: PathBuf = current_exe_path
-            .join("../../data/elements2.csv")
-            .canonicalize()
-            .expect("Canonicalization of executable path failed.");
+        let elements_csv_path: PathBuf = if is_average {
+            current_exe_path.join("../../data/elements.csv")
+        } else {
+            current_exe_path.join("../../data/absolute.csv")
+        }
+        .canonicalize()
+        .expect("Canonicalization of executable path failed.");
 
         // Try mapping to clones to remake each time, instead of new reader.
         let elements_csv_stream = csv::Reader::from_path(elements_csv_path);
@@ -257,6 +286,45 @@ fn parse_protein_formula<'a>(formula: String) -> Vec<String> {
         let aa_formula = aa_csv_deserialized
             .find(|aa_row| aa_row.as_ref().unwrap().letter == val.as_str().to_owned());
         let in_vec: Vec<String> = parse_molecular_formula(aa_formula.unwrap().unwrap().formula);
+
+        out_vec.append(in_vec.to_vec().as_mut());
+    });
+    out_vec
+}
+
+fn parse_nucleic_formula<'a>(formula: String, is_rna: bool, is_average: bool) -> Vec<String> {
+    let reg = if is_rna {
+        Regex::new(r"[AUGCaugc]")
+    } else {
+        Regex::new(r"[ATGCatgc]")
+    }
+    .expect("RegEx parsing error.");
+
+    let binding = reg.to_owned();
+    let out = binding.find_iter(formula.as_str());
+
+    let current_exe_res = env::current_exe();
+    let mut current_exe_path: PathBuf = current_exe_res.expect("Could not read executable path.");
+    current_exe_path.pop();
+
+    let mut out_vec: Vec<String> = vec![];
+    out.for_each(|val| {
+        let na_csv_path: PathBuf = if is_average {
+            current_exe_path.join("../../data/nucleic.csv")
+        } else {
+            current_exe_path.join("../../data/deoxyribonucleic.csv")
+        }
+        .canonicalize()
+        .expect("Canonicalization of executable path failed.");
+
+        let na_csv_stream = csv::Reader::from_path(na_csv_path);
+        let na_deserialize_binding = na_csv_stream.unwrap();
+        let mut na_csv_deserialized = na_deserialize_binding.into_deserialize::<NucleicAcidRow>();
+
+        let na_formula = na_csv_deserialized.find(|na_row| {
+            na_row.as_ref().unwrap().letter == val.as_str().to_owned().to_uppercase()
+        });
+        let in_vec: Vec<String> = parse_molecular_formula(na_formula.unwrap().unwrap().formula);
 
         out_vec.append(in_vec.to_vec().as_mut());
     });
