@@ -16,6 +16,7 @@ use clap::{arg, error::ErrorKind, ArgGroup, Args, Command};
 use colored::Colorize;
 use regex::Regex;
 use std::{env, path::PathBuf};
+use std::num::ParseFloatError;
 
 #[derive(Debug, serde::Deserialize, Clone)]
 struct ElementRow {
@@ -92,6 +93,7 @@ fn main() {
 
     let cli = Arguments::augment_args(cli);
 
+    let h_mass: f32 = 1.00794;
     let matches = cli.get_matches();
     let molecule_string = match matches.get_raw("formula") {
         Some(mut raw) => raw
@@ -124,7 +126,19 @@ fn main() {
 
     if matches.get_flag("protein") {
         let formula_vec = parse_protein_formula(molecule_string);
-        let output = mass_from_formula(formula_vec, is_debug, is_average);
+        let mut number_of_hydrogens = -2.0;
+        let _ = formula_vec.iter().for_each(|val| {
+            if val.contains("H") {
+                let reg = Regex::new(r"(\d+)").expect("RegEx parsing error.");
+                let matched = reg
+                    .find(&val).expect("").as_str().to_owned();
+                let parsed: Result<f32, ParseFloatError> = matched.parse::<f32>();
+                number_of_hydrogens += parsed.expect("Could not parse # of hydrogens as a float.");
+            }
+        });
+            // .collect::<Vec<&String>>().len() as i32;
+        let mass_to_subtract: f32 = number_of_hydrogens * h_mass;
+        let output = mass_from_formula(formula_vec, is_debug, is_average) - mass_to_subtract;
         println!("{:?}", output);
         return;
     }
